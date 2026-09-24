@@ -8,6 +8,7 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { CustomersPage } from '@/pages/customers/CustomersPage';
+import { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage';
 import { OrdersPage } from '@/pages/orders/OrdersPage';
 import { MeasurementsPage } from '@/pages/measurements/MeasurementsPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
@@ -49,6 +50,7 @@ export function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/measurements" element={<MeasurementsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
