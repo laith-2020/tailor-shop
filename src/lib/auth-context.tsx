@@ -36,6 +36,20 @@ const DEMO_PROFILE: Profile = {
   updated_at: new Date().toISOString(),
 };
 
+function getInitialDemoShop(): Shop {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('tailor_demo_shop');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return DEMO_SHOP;
+}
+
 function checkIsDemoLoggedIn() {
   if (typeof window === 'undefined' || isSupabaseConfigured) return false;
   return localStorage.getItem('tailor_demo_auth') === 'true';
@@ -44,7 +58,7 @@ function checkIsDemoLoggedIn() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => (checkIsDemoLoggedIn() ? DEMO_USER : null));
   const [profile, setProfile] = useState<Profile | null>(() => (checkIsDemoLoggedIn() ? DEMO_PROFILE : null));
-  const [shop, setShop] = useState<Shop | null>(() => (checkIsDemoLoggedIn() ? DEMO_SHOP : null));
+  const [shop, setShop] = useState<Shop | null>(() => (checkIsDemoLoggedIn() ? getInitialDemoShop() : null));
   const [isLoading, setIsLoading] = useState<boolean>(() => isSupabaseConfigured);
 
   // Fetch profile and shop for authenticated user
@@ -52,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseConfigured) {
       setUser(DEMO_USER);
       setProfile(DEMO_PROFILE);
-      setShop(DEMO_SHOP);
+      setShop(getInitialDemoShop());
       return;
     }
 

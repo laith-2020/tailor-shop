@@ -10,6 +10,7 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { CustomersPage } from '@/pages/customers/CustomersPage';
 import { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage';
 import { OrdersPage } from '@/pages/orders/OrdersPage';
+import { OrderDetailPage } from '@/pages/orders/OrderDetailPage';
 import { MeasurementsPage } from '@/pages/measurements/MeasurementsPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -52,6 +53,7 @@ export function AppRoutes() {
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/measurements" element={<MeasurementsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

@@ -1,0 +1,19 @@
+{
+  "name": "مخيطة حضرموت - نظام إدارة الخياطة",
+  "short_name": "مخيطة حضرموت",
+  "description": "نظام إدارة طلبات وتفصيل الأثواب والمقاسات والعملاء",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#d97706",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/icons.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
