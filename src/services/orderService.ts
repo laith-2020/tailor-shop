@@ -785,4 +785,46 @@ export const orderService = {
 
     if (error) throw new Error('فشل تسجيل الدفعة');
   },
+
+  /**
+   * Delete order permanently
+   */
+  async deleteOrder(orderId: string, shopId: string): Promise<void> {
+    if (!isSupabaseConfigured) {
+      // 1. Remove from demo orders
+      const orders = getDemoOrders();
+      const filteredOrders = orders.filter((o) => !(o.id === orderId && o.shop_id === shopId));
+      saveDemoOrders(filteredOrders);
+
+      // 2. Remove associated measurements
+      const measurements = getDemoMeasurements();
+      const filteredMeasurements = measurements.filter(
+        (m) => !(m.order_id === orderId && m.shop_id === shopId)
+      );
+      saveDemoMeasurements(filteredMeasurements);
+      return;
+    }
+
+    // Supabase mode: delete measurements first, then order
+    const { error: mError } = await supabase
+      .from('measurements')
+      .delete()
+      .eq('order_id', orderId)
+      .eq('shop_id', shopId);
+
+    if (mError) {
+      console.warn('Note: Could not delete order measurements or none existed:', mError.message);
+    }
+
+    const { error: oError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId)
+      .eq('shop_id', shopId);
+
+    if (oError) {
+      console.error('Error deleting order:', oError);
+      throw new Error(oError.message || 'فشل حذف الطلب');
+    }
+  },
 };

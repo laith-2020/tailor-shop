@@ -8,6 +8,7 @@ import {
   ChevronRight,
   AlertCircle,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import type { Order, OrderStatus } from '@/types/database';
 import { OrderStatusBadge } from '@/components/ui/Badge';
@@ -21,6 +22,7 @@ interface OrderListProps {
   totalPages: number;
   onPageChange: (newPage: number) => void;
   onEdit: (order: Order) => void;
+  onDelete?: (order: Order) => void;
   onQuickStatusChange: (orderId: string, status: OrderStatus) => void;
   isLoading?: boolean;
 }
@@ -32,6 +34,7 @@ export function OrderList({
   totalPages,
   onPageChange,
   onEdit,
+  onDelete,
   onQuickStatusChange,
   isLoading,
 }: OrderListProps) {
@@ -212,6 +215,17 @@ export function OrderList({
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      {onDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="حذف الطلب"
+                          onClick={() => onDelete(ord)}
+                          className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -337,10 +351,22 @@ export function OrderList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit(ord)}
+                    title="تعديل الطلب"
                     className="text-xs h-8 px-2"
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </Button>
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(ord)}
+                      title="حذف الطلب"
+                      className="text-xs h-8 px-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

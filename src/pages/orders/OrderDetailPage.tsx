@@ -10,14 +10,16 @@ import {
   FileText,
   AlertCircle,
   Scissors,
+  Trash2,
 } from 'lucide-react';
-import { useOrder, useUpdateOrder, useUpdateOrderStatus, useUpdateOrderPayment } from '@/hooks/useOrders';
+import { useOrder, useUpdateOrder, useUpdateOrderStatus, useUpdateOrderPayment, useDeleteOrder } from '@/hooks/useOrders';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { OrderStatusBadge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MeasurementCard } from '@/components/measurements/MeasurementCard';
 import { OrderFormModal } from '@/components/orders/OrderFormModal';
+import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,6 +38,7 @@ export function OrderDetailPage() {
   const unit = shop?.measurement_unit || 'سم';
 
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [newPaymentAmount, setNewPaymentAmount] = useState<number>(0);
   const [printFormat, setPrintFormat] = useState<'a4' | 'receipt'>('a4');
@@ -45,10 +48,18 @@ export function OrderDetailPage() {
   const updateOrderMutation = useUpdateOrder();
   const updateStatusMutation = useUpdateOrderStatus();
   const updatePaymentMutation = useUpdateOrderPayment();
+  const deleteOrderMutation = useDeleteOrder();
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!order) return;
+    await deleteOrderMutation.mutateAsync(order.id);
+    setDeleteModalOpen(false);
+    navigate('/orders', { replace: true });
   };
 
   useEffect(() => {
@@ -207,6 +218,16 @@ export function OrderDetailPage() {
           <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)} className="text-xs">
             <Edit className="w-3.5 h-3.5 ml-1" />
             تعديل
+          </Button>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteModalOpen(true)}
+            className="text-xs"
+          >
+            <Trash2 className="w-3.5 h-3.5 ml-1" />
+            حذف الطلب
           </Button>
         </div>
       </div>
@@ -524,6 +545,15 @@ export function OrderDetailPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Delete Order Confirmation Dialog */}
+      <DeleteOrderDialog
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        order={order}
+        onConfirm={handleDeleteOrder}
+        isLoading={deleteOrderMutation.isPending}
+      />
     </div>
   );
 }

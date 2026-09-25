@@ -119,3 +119,20 @@ export function useUpdateOrderPayment() {
     },
   });
 }
+
+export function useDeleteOrder() {
+  const queryClient = useQueryClient();
+  const { shop } = useAuth();
+  const shopId = shop?.id || '00000000-0000-0000-0000-000000000001';
+
+  return useMutation({
+    mutationFn: (orderId: string) => orderService.deleteOrder(orderId, shopId),
+    onSuccess: (_, orderId) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+  });
+}

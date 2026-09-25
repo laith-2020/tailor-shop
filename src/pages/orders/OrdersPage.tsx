@@ -12,11 +12,13 @@ import { Input } from '@/components/ui/Input';
 import { OrderList } from '@/components/orders/OrderList';
 import { OrderFormModal } from '@/components/orders/OrderFormModal';
 import { OrderConfirmationModal } from '@/components/orders/OrderConfirmationModal';
+import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import {
   useOrders,
   useCreateOrder,
   useUpdateOrder,
   useUpdateOrderStatus,
+  useDeleteOrder,
 } from '@/hooks/useOrders';
 import type { Order, OrderStatus } from '@/types/database';
 import type { OrderFormData } from '@/schemas/order';
@@ -34,6 +36,7 @@ export function OrdersPage() {
   // Modals state
   const [formModalOpen, setFormModalOpen] = useState(Boolean(initialCustomerParam));
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
   const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -52,10 +55,23 @@ export function OrdersPage() {
   const createOrderMutation = useCreateOrder();
   const updateOrderMutation = useUpdateOrder();
   const updateStatusMutation = useUpdateOrderStatus();
+  const deleteOrderMutation = useDeleteOrder();
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    try {
+      await deleteOrderMutation.mutateAsync(orderToDelete.id);
+      setOrderToDelete(null);
+      showToast('تم حذف الطلب بنجاح');
+    } catch (err) {
+      console.error('Failed to delete order:', err);
+      showToast('حدث خطأ أثناء محاولة حذف الطلب');
+    }
   };
 
   const handleOpenNewOrder = () => {
@@ -222,6 +238,7 @@ export function OrdersPage() {
         totalPages={data?.totalPages || 1}
         onPageChange={setPage}
         onEdit={handleOpenEdit}
+        onDelete={(order) => setOrderToDelete(order)}
         onQuickStatusChange={handleQuickStatusChange}
         isLoading={isLoading}
       />
@@ -247,6 +264,15 @@ export function OrdersPage() {
           setEditingOrder(null);
           setFormModalOpen(true);
         }}
+      />
+
+      {/* Delete Order Confirmation Dialog */}
+      <DeleteOrderDialog
+        isOpen={Boolean(orderToDelete)}
+        onClose={() => setOrderToDelete(null)}
+        order={orderToDelete}
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteOrderMutation.isPending}
       />
     </div>
   );
