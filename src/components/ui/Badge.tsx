@@ -46,8 +46,8 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 
 export function UserRoleBadge({ role }: { role: UserRole }) {
   const roleConfig: Record<UserRole, { label: string; variant: 'default' | 'neutral' }> = {
-    owner: { label: 'مدير المتجر', variant: 'default' },
-    staff: { label: 'موظف تفصيل', variant: 'neutral' },
+    owner: { label: 'خياط مسؤول', variant: 'default' },
+    staff: { label: 'خياط / مساعد', variant: 'neutral' },
   };
 
   const config = roleConfig[role] || { label: role, variant: 'neutral' };

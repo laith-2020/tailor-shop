@@ -2,39 +2,69 @@ import React, { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type { Profile, Shop } from '@/types/database';
-import { AuthContext } from './auth-types';
+import { AuthContext, type ResponsibleTailor } from './auth-types';
 
-
-// Demo fallback mock shop and profile for local test environments
-const DEMO_SHOP: Shop = {
+// Demo fallback mock shop
+export const DEMO_SHOP: Shop = {
   id: '00000000-0000-0000-0000-000000000001',
   name: 'مخيطة حضرموت',
-  phone: '0791234567',
-  address: 'عمان - شارع وصفي التل',
+  phone: '0775175613',
+  address: 'الازرق - الشارع العام',
   currency: 'JOD',
-  measurement_unit: 'سم',
+  measurement_unit: 'انش',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
 
-const DEMO_USER = {
-  id: 'demo-user-id',
-  email: 'demo@hadramout.com',
-  app_metadata: {},
-  user_metadata: { full_name: 'أبو أحمد الحضرمي' },
-  aud: 'authenticated',
-  created_at: new Date().toISOString(),
-} as unknown as User;
+// Responsible tailors (خياطين مسؤولين)
+export const RESPONSIBLE_TAILORS: ResponsibleTailor[] = [
+  {
+    id: 'tailor-abu-khaled',
+    name: 'أبو خالد اليمني',
+    phone: '0775175613',
+    email: 'abukhaled@hadramout.com',
+    role: 'owner',
+    title: 'أبو خالد اليمني (الخياط المسؤول)',
+    nickname: 'أبو خالد',
+  },
+  {
+    id: 'tailor-mahfoudh',
+    name: 'محفوظ أبو حنين',
+    phone: '0780572223',
+    email: 'mahfoudh@hadramout.com',
+    role: 'owner',
+    title: 'محفوظ أبو حنين (الخياط المسؤول)',
+    nickname: 'محفوظ أبو حنين',
+  },
+];
 
-const DEMO_PROFILE: Profile = {
-  id: 'demo-user-id',
-  shop_id: DEMO_SHOP.id,
-  full_name: 'أبو أحمد الحضرمي (الخياط المسؤول)',
-  email: 'demo@hadramout.com',
-  role: 'owner',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+function createTailorUser(tailor: ResponsibleTailor): User {
+  return {
+    id: tailor.id,
+    email: tailor.email,
+    app_metadata: {},
+    user_metadata: {
+      full_name: tailor.name,
+      phone: tailor.phone,
+      role: tailor.role,
+    },
+    aud: 'authenticated',
+    created_at: new Date().toISOString(),
+  } as unknown as User;
+}
+
+function createTailorProfile(tailor: ResponsibleTailor, shopId: string): Profile {
+  return {
+    id: tailor.id,
+    shop_id: shopId,
+    full_name: tailor.title,
+    email: tailor.email,
+    phone: tailor.phone,
+    role: tailor.role,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
 
 function getInitialDemoShop(): Shop {
   if (typeof window !== 'undefined') {
@@ -50,22 +80,50 @@ function getInitialDemoShop(): Shop {
   return DEMO_SHOP;
 }
 
-function checkIsDemoLoggedIn() {
+function getActiveDemoTailor(): ResponsibleTailor {
+  if (typeof window !== 'undefined') {
+    const savedId = localStorage.getItem('tailor_demo_active_user');
+    const matched = RESPONSIBLE_TAILORS.find((t) => t.id === savedId);
+    if (matched) return matched;
+  }
+  return RESPONSIBLE_TAILORS[0]; // Abu Khaled by default
+}
+
+function checkIsDemoLoggedIn(): boolean {
   if (typeof window === 'undefined' || isSupabaseConfigured) return false;
   return localStorage.getItem('tailor_demo_auth') === 'true';
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => (checkIsDemoLoggedIn() ? DEMO_USER : null));
-  const [profile, setProfile] = useState<Profile | null>(() => (checkIsDemoLoggedIn() ? DEMO_PROFILE : null));
-  const [shop, setShop] = useState<Shop | null>(() => (checkIsDemoLoggedIn() ? getInitialDemoShop() : null));
+  const [activeTailor, setActiveTailor] = useState<ResponsibleTailor | null>(() =>
+    checkIsDemoLoggedIn() ? getActiveDemoTailor() : null
+  );
+
+  const [user, setUser] = useState<User | null>(() => {
+    if (!checkIsDemoLoggedIn()) return null;
+    const tailor = getActiveDemoTailor();
+    return createTailorUser(tailor);
+  });
+
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    if (!checkIsDemoLoggedIn()) return null;
+    const tailor = getActiveDemoTailor();
+    return createTailorProfile(tailor, DEMO_SHOP.id);
+  });
+
+  const [shop, setShop] = useState<Shop | null>(() =>
+    checkIsDemoLoggedIn() ? getInitialDemoShop() : null
+  );
+
   const [isLoading, setIsLoading] = useState<boolean>(() => isSupabaseConfigured);
 
-  // Fetch profile and shop for authenticated user
+  // Fetch profile and shop for authenticated user in Supabase mode
   const fetchProfileAndShop = async (userId: string) => {
     if (!isSupabaseConfigured) {
-      setUser(DEMO_USER);
-      setProfile(DEMO_PROFILE);
+      const tailor = getActiveDemoTailor();
+      setActiveTailor(tailor);
+      setUser(createTailorUser(tailor));
+      setProfile(createTailorProfile(tailor, DEMO_SHOP.id));
       setShop(getInitialDemoShop());
       return;
     }
@@ -85,6 +143,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileData) {
         const typedProfile = profileData as Profile;
         setProfile(typedProfile);
+
+        // Map to activeTailor if match found
+        const matchingTailor = RESPONSIBLE_TAILORS.find(
+          (t) =>
+            t.phone === typedProfile.phone ||
+            t.email === typedProfile.email ||
+            typedProfile.full_name?.includes(t.name)
+        );
+        if (matchingTailor) {
+          setActiveTailor(matchingTailor);
+        }
 
         const { data: shopData, error: shopErr } = await supabase
           .from('shops')
@@ -126,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setProfile(null);
         setShop(null);
+        setActiveTailor(null);
       }
       setIsLoading(false);
     });
@@ -135,32 +205,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, password: string): Promise<{ error?: string }> => {
+  const switchTailor = (tailorId: string) => {
+    const target = RESPONSIBLE_TAILORS.find((t) => t.id === tailorId);
+    if (!target) return;
+
+    localStorage.setItem('tailor_demo_active_user', target.id);
+    localStorage.setItem('tailor_demo_auth', 'true');
+    setActiveTailor(target);
+    setUser(createTailorUser(target));
+    setProfile(createTailorProfile(target, shop?.id || DEMO_SHOP.id));
+  };
+
+  const signIn = async (identifier: string, password?: string): Promise<{ error?: string }> => {
     setIsLoading(true);
     try {
+      const cleanInput = identifier.trim();
+      const cleanDigits = cleanInput.replace(/[\s-+]/g, '');
+
       if (!isSupabaseConfigured) {
-        // Mock demo authentication
-        if (password.length >= 6) {
-          localStorage.setItem('tailor_demo_auth', 'true');
-          setUser(DEMO_USER);
-          setProfile(DEMO_PROFILE);
-          setShop(DEMO_SHOP);
-          setIsLoading(false);
-          return {};
+        // Find matching tailor by phone, email, or name
+        let matched = RESPONSIBLE_TAILORS.find((t) => {
+          const tPhoneClean = t.phone.replace(/[\s-+]/g, '');
+          return (
+            (cleanDigits.length >= 7 && (tPhoneClean.includes(cleanDigits) || cleanDigits.includes(tPhoneClean))) ||
+            t.phone === cleanInput ||
+            t.email.toLowerCase() === cleanInput.toLowerCase() ||
+            cleanInput.includes(t.name) ||
+            t.name.includes(cleanInput)
+          );
+        });
+
+        // Allow demo login email fallback or default
+        if (!matched) {
+          if (cleanInput.toLowerCase() === 'demo@hadramout.com' || cleanInput === '') {
+            matched = RESPONSIBLE_TAILORS[0];
+          } else {
+            setIsLoading(false);
+            return {
+              error: 'رقم الهاتف أو الحساب غير مسجل. يرجى استخدام 0775175613 (أبو خالد) أو 0780572223 (محفوظ)',
+            };
+          }
         }
+
+        // Validate password if supplied
+        if (password && password.length < 4) {
+          setIsLoading(false);
+          return { error: 'كلمة المرور يجب أن لا تقل عن 4 أرقام أو أحرف' };
+        }
+
+        // Successfully log in as the matched tailor
+        localStorage.setItem('tailor_demo_auth', 'true');
+        localStorage.setItem('tailor_demo_active_user', matched.id);
+
+        setActiveTailor(matched);
+        setUser(createTailorUser(matched));
+        const currentShop = getInitialDemoShop();
+        setProfile(createTailorProfile(matched, currentShop.id));
+        setShop(currentShop);
         setIsLoading(false);
-        return { error: 'كلمة المرور يجب أن لا تقل عن 6 أحرف' };
+        return {};
+      }
+
+      // Supabase Authenticated mode
+      // If user typed a phone number, map it to corresponding email
+      let emailToUse = cleanInput;
+      const matchedByPhone = RESPONSIBLE_TAILORS.find(
+        (t) => t.phone.replace(/\D/g, '') === cleanDigits
+      );
+      if (matchedByPhone) {
+        emailToUse = matchedByPhone.email;
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: emailToUse,
+        password: password || '123456',
       });
 
       if (error) {
         setIsLoading(false);
         if (error.message.includes('Invalid login credentials')) {
-          return { error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' };
+          return { error: 'رقم الهاتف أو البريد الإلكتروني أو كلمة المرور غير صحيحة' };
         }
         return { error: error.message };
       }
@@ -182,8 +306,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     if (!isSupabaseConfigured) {
       localStorage.removeItem('tailor_demo_auth');
+      localStorage.removeItem('tailor_demo_active_user');
       setUser(null);
       setProfile(null);
+      setActiveTailor(null);
       setShop(null);
       setIsLoading(false);
       return;
@@ -193,6 +319,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
+      setActiveTailor(null);
       setShop(null);
     } catch (err) {
       console.error('Error signing out:', err);
@@ -247,7 +374,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         shop,
         isLoading,
         isConfigured: isSupabaseConfigured,
+        activeTailor,
+        availableTailors: RESPONSIBLE_TAILORS,
         signIn,
+        switchTailor,
         signOut,
         sendPasswordReset,
         updatePassword,

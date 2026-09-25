@@ -23,7 +23,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { OrderStatus } from '@/types/database';
 
 export function DashboardPage() {
-  const { profile, shop } = useAuth();
+  const { profile, shop, activeTailor } = useAuth();
   const shopName = shop?.name || 'مخيطة حضرموت';
   const currency = shop?.currency === 'JOD' ? 'د.أ' : (shop?.currency || 'د.أ');
 
@@ -42,7 +42,7 @@ export function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            مرحباً بك، {profile?.full_name?.split(' ')[0] || 'الخياط'} 👋
+            مرحباً بك، {activeTailor?.nickname || profile?.full_name?.split(' ').slice(0, 2).join(' ') || 'الخياط المسؤول'} 👋
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             لوحة قيادة <strong className="text-slate-800">{shopName}</strong> لمتابعة الطلبات والتسليمات

@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Smartphone,
   Info,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { shopService } from '@/services/shopService';
@@ -20,9 +21,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { UserRoleBadge } from '@/components/ui/Badge';
+import { RESPONSIBLE_TAILORS } from '@/lib/auth-context';
+import { cn } from '@/utils/cn';
 
 export function SettingsPage() {
-  const { shop, refreshProfileAndShop, isConfigured } = useAuth();
+  const { shop, refreshProfileAndShop, isConfigured, activeTailor, switchTailor } = useAuth();
   const shopId = shop?.id || '00000000-0000-0000-0000-000000000001';
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -208,6 +212,71 @@ export function SettingsPage() {
           </Button>
         </div>
       </form>
+
+      {/* Responsible Tailors Management Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="w-5 h-5 text-amber-600" />
+            الخياطون المسؤولون (المخولون بإدارة النظام)
+          </CardTitle>
+          <CardDescription>
+            المستخدمون الذين يمتلكون الصلاحيات الكاملة لإدخال المقاسات، تعديل الطلبات، وإدارة المخيطة
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {RESPONSIBLE_TAILORS.map((tailor) => {
+              const isCurrent = activeTailor?.id === tailor.id;
+              return (
+                <div
+                  key={tailor.id}
+                  className={cn(
+                    'p-4 rounded-xl border transition-all flex flex-col justify-between',
+                    isCurrent
+                      ? 'border-amber-400 bg-amber-50/50 shadow-xs'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  )}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-sm">{tailor.name}</span>
+                      <UserRoleBadge role="owner" />
+                    </div>
+                    <div className="mt-2 space-y-1 text-xs text-slate-600">
+                      <div className="flex items-center gap-1.5" dir="ltr">
+                        <Phone className="w-3.5 h-3.5 text-amber-600" />
+                        <span className="font-mono text-slate-800 font-semibold">{tailor.phone}</span>
+                      </div>
+                      <div className="text-slate-500 font-mono text-[11px]">{tailor.email}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium text-[11px]">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      مصرح له بالدخول
+                    </span>
+                    {isCurrent ? (
+                      <span className="text-[11px] font-bold text-amber-700">الحساب النشط حالياً</span>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => switchTailor(tailor.id)}
+                        className="text-[11px] h-7 px-2"
+                      >
+                        تبديل لهذا الحساب
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Cloud & PWA Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">

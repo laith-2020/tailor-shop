@@ -18,6 +18,7 @@ export interface Profile {
   shop_id: string;
   full_name: string;
   email: string;
+  phone?: string | null;
   role: UserRole;
   created_at: string;
   updated_at: string;
