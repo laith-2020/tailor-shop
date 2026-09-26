@@ -166,6 +166,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (shopData) {
           setShop(shopData as Shop);
         }
+      } else {
+        // Fallback: create default profile for this user if it doesn't exist
+        const { data: defaultShop } = await supabase.from('shops').select('*').limit(1).maybeSingle();
+        const matchingTailor = RESPONSIBLE_TAILORS.find(
+          (t) => t.id === userId || (user && t.email === user.email)
+        ) || RESPONSIBLE_TAILORS[0];
+
+        const targetShop = (defaultShop as Shop) || DEMO_SHOP;
+        const fallbackProfile: Profile = {
+          id: userId,
+          shop_id: targetShop.id,
+          full_name: matchingTailor.title,
+          email: matchingTailor.email,
+          phone: matchingTailor.phone,
+          role: 'owner',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        await supabase.from('profiles').upsert(fallbackProfile);
+        setProfile(fallbackProfile);
+        setActiveTailor(matchingTailor);
+        setShop(targetShop);
       }
     } catch (err) {
       console.error('Failed to load user profile or shop:', err);
@@ -276,15 +299,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailToUse = matchedByPhone.email;
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const primaryPassword = password || (matchedByPhone ? matchedByPhone.phone : '123456');
+
+      let { data, error } = await supabase.auth.signInWithPassword({
         email: emailToUse,
-        password: password || '123456',
+        password: primaryPassword,
       });
+
+      // If failed with invalid credentials and it's a known tailor, try alternative default password
+      if (error && matchedByPhone && error.message.includes('Invalid login credentials')) {
+        const altPassword = primaryPassword === matchedByPhone.phone ? '123456' : matchedByPhone.phone;
+        const retry = await supabase.auth.signInWithPassword({
+          email: emailToUse,
+          password: altPassword,
+        });
+        if (!retry.error) {
+          data = retry.data;
+          error = null;
+        }
+      }
 
       if (error) {
         setIsLoading(false);
         if (error.message.includes('Invalid login credentials')) {
-          return { error: 'رقم الهاتف أو البريد الإلكتروني أو كلمة المرور غير صحيحة' };
+          return { error: 'بيانات الدخول غير صحيحة. يرجى تشغيل ملف SQL لتسجيل الخياطين في Supabase' };
         }
         return { error: error.message };
       }
