@@ -370,6 +370,7 @@ function OrderFormContent({
         <MeasurementFormFields
           register={register}
           setValue={setValue}
+          control={control}
           previousMeasurements={previousMeasurements}
           onCopyPrevious={handleCopyPrevious}
           unit={unit}
